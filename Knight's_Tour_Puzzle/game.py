@@ -197,9 +197,10 @@ def show_solution(board: Chessboard) -> None:
     board.print_board()
 
 
-def warnsdorff(board: Chessboard, call: int) -> Chessboard:
+def warnsdorff(board: Chessboard, call: int) -> tuple[Chessboard, bool]:
     """ Return the solved board based on Warnsdorff's rule. If the board is not solvable, return the board solved
      up to a dead end. """
+    solved = False
     # Number of the current move
     current_move = call
     # Indices of the knight's current position
@@ -207,31 +208,44 @@ def warnsdorff(board: Chessboard, call: int) -> Chessboard:
     # List of all the possible moves from the knight's current position
     possible_moves = board.possible_moves(board.knight_position)
 
-    # If there are no more moves, return the board
+    # If there are no more moves, return the board and a bool signaling if the puzzle was solved or not
     if not possible_moves:
-        board.board[i][j] = " " * (board.cell_size - len(str(current_move))) + str(
-            current_move)
-        return board
+        board.board[i][j] = " " * (board.cell_size - len(str(current_move))) + str(current_move)
+        # Board solved
+        if board.count_visited_cells() == board.rows * board.cols:
+            return board, True
+        # Dead end
+        else:
+            board.board[i][j] = "_" * board.cell_size
+            return board, False
 
-    # Find the next move based on Warnsdorff's rule. (next move is the move with the least possible next moves)
-    next_move = []
-    minimum = None
-    for move in possible_moves:
-        if minimum:
-            if minimum > len(board.possible_moves(move)):
+    while not solved and possible_moves:
+        # Find the next move based on Warnsdorff's rule. (next move is the move with the least possible next moves)
+        next_move = []
+        minimum = None
+        for move in possible_moves:
+            if minimum:
+                if minimum > len(board.possible_moves(move)):
+                    minimum = len(board.possible_moves(move))
+                    next_move = move
+            else:
                 minimum = len(board.possible_moves(move))
                 next_move = move
-        else:
-            minimum = len(board.possible_moves(move))
-            next_move = move
 
-    # Set the current cell to the number of the current move and move the knight to that position
-    board.board[i][j] = " " * (board.cell_size - len(str(current_move))) + str(current_move)
-    board.knight_position = next_move
+        # Set the current cell to the number of the current move and move the knight to that position
+        board.board[i][j] = " " * (board.cell_size - len(str(current_move))) + str(current_move)
+        board.knight_position = next_move
 
-    # Recursive call for the next move
-    warnsdorff(board, current_move + 1)
-    return board
+        # Recursive call for the next move
+        board, solved = warnsdorff(board, current_move + 1)
+
+        # If a dead end was reached, reset the board to what it was before the move
+        if not solved:
+            possible_moves.pop(possible_moves.index(next_move))
+            board.board[i][j] = "_" * board.cell_size
+            board.knight_position = board.index_to_coords([i, j])
+
+    return board, solved
 
 
 def main():
@@ -244,12 +258,10 @@ def main():
     mode = select_mode_loop()
 
     # Try to solve the board on a copy of the set-up board
-    solved_board = warnsdorff(copy.deepcopy(board), 1)
+    solved_board, solved = warnsdorff(copy.deepcopy(board), 1)
 
     # Check if the puzzle has a solution
-    print(board)
-    if solved_board.count_visited_cells() == solved_board.rows * solved_board.cols:
-
+    if solved:
         # It there is a solution, enter the user's chosen mode
         if mode == "y":
             board.make_move(start_position)
