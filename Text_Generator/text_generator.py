@@ -37,6 +37,19 @@ class MarkovChain:
         self.trigrams = self.break_into_trigrams()
         self.chain = self.create_markov_chain()
 
+    def __repr__(self):
+        return f"MarkovChain(path={self.path})"
+
+    def __str__(self):
+        number_of_tokens = len(self.tokens)
+        number_of_unique_tokens = len(set(self.tokens))
+        number_of_trigrams = len(self.trigrams)
+        msg = (f"a Markov chain generated from {self.path}\n"
+               f"number of tokens: {number_of_tokens}\n"
+               f"number of unique tokens: {number_of_unique_tokens}\n"
+               f"number of trigrams: {number_of_trigrams}")
+        return msg
+
     def generate_tokens(self) -> list:
         """
         Return the tokens of a text corpus taken from a text file.
@@ -97,7 +110,7 @@ class MarkovChain:
                  punctuation mark (., !, ?).
         """
         first_words = random.choice(list(self.chain.keys()))
-        first_word, second_word = [word.strip("[\"']") for word in first_words.split()]
+        first_word, second_word = first_words.split()
         if first_words[0].isupper() and first_word[-1] not in [".", "!", "?"]:
             return f"{first_word} {second_word}"
         else:
@@ -112,8 +125,8 @@ class MarkovChain:
         """
         next_words = list(self.chain[words].keys())
         counts = list(self.chain[words].values())
-        next_word = random.choices(next_words, counts)
-        return str(next_word).strip("[\"']")
+        next_word = random.choices(next_words, counts)[0]
+        return next_word
 
 
 def main():
